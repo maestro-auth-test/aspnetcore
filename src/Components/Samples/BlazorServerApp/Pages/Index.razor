@@ -1,7 +1,49 @@
-﻿@page "/"
+﻿@inject IJSRuntime JSRuntime
+@page "/"
 
 <PageTitle>Index</PageTitle>
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+
+<div>
+    <button class="btn btn-primary" @onclick="LogDefault">Log default</button>
+</div>
+
+<div>
+    Message: <input type="text" @bind="Message" />
+    <button class="btn btn-primary" @onclick="() => LogMessage(Message)">Log message</button>
+</div>
+
+<div>
+    Title: <input type="text" @bind="Title" />
+    <button class="btn btn-primary" @onclick="() => SetDocumentTitle(Title)">Change title</button>
+    <button class="btn btn-primary" @onclick="() => SetDocumentTitleDirectly(Title)">Change title directly</button>
+</div>
+
+@code {
+    private string? Message { get; set; }
+    private string? Title { get; set; }
+
+    private async Task LogDefault()
+    {
+        await JSRuntime.InvokeVoidAsync("logDefault");
+    }
+
+    private async Task LogMessage(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("logMessage", message);
+        await JSRuntime.InvokeVoidAsync("console.log", $"Console: {message}");
+    }
+
+    private async Task SetDocumentTitle(string title)
+    {
+        await JSRuntime.InvokeVoidAsync("setDocumentTitle", title);
+    }
+
+    private async Task SetDocumentTitleDirectly(string title)
+    {
+        await JSRuntime.InvokeVoidAsync("document.title", title);
+    }
+}
