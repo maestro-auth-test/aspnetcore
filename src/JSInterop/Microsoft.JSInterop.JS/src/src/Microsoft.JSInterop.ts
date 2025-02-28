@@ -54,20 +54,14 @@ export module DotNet {
                 return result;
             }
 
-            //   return (value: unknown) => result[lastSegmentValue] = value;
-            console.log("TODO: Not a function, but should be supported");
-
-            throw new Error(`The value '${identifier}' is not a function. This is an updated message.`);
-        }
-
-        isConstructor(value: any) {
-            return !!value && !!value.prototype && !!value.prototype.constructor;
+            throw new Error(`The value '${identifier}' is not a function.`);
         }
 
         public resolveMember(identifier: string): ObjectMemberDescriptor {
-            const keys = identifier.split(".");
             let current: any = this._jsObject;
             let parent: any = null;
+            
+            const keys = identifier.split(".");
 
             for (const key of keys) {
                 if (current && typeof current === 'object' && key in current) {
@@ -84,8 +78,6 @@ export module DotNet {
             if (value !== undefined) {
                 if (typeof value === "function") {
                     kind = "function";
-                } else if (typeof value === "object" && value !== null) {
-                    kind = "property";
                 } else {
                     kind = "data";
                 }
@@ -425,6 +417,8 @@ export module DotNet {
         }
 
         invokeJSFromDotNet(identifier: string, argsJson: string, resultType: JSCallResultType, targetInstanceId: number): string | null {
+            console.log("invokeJSFromDotNet", identifier, argsJson, resultType, targetInstanceId);
+
             const args = parseJsonWithRevivers(this, argsJson);
             const jsFunction = findJSFunction(identifier, targetInstanceId);
             const returnValue = jsFunction(...(args || []));
@@ -436,13 +430,32 @@ export module DotNet {
         }
 
         beginInvokeJSFromDotNet(asyncHandle: number, identifier: string, argsJson: string | null, resultType: JSCallResultType, targetInstanceId: number): void {
+            console.log("beginInvokeJSFromDotNet", identifier, argsJson, resultType, targetInstanceId);
+
             // Coerce synchronous functions into async ones, plus treat
             // synchronous exceptions the same as async ones
             const promise = new Promise<any>(resolve => {
                 const args = parseJsonWithRevivers(this, argsJson);
-                const jsFunction = findJSFunction(identifier, targetInstanceId);
-                const synchronousResultOrPromise = jsFunction(...(args || []));
-                resolve(synchronousResultOrPromise);
+                const member = resolveObjectMember(identifier, targetInstanceId);
+
+                if (member.kind === "function") {
+                    const jsFunction = member.parent[member.memberName];
+                    const synchronousResultOrPromise = jsFunction(...(args || []));
+                    resolve(synchronousResultOrPromise);
+                } else if (member.kind === "data") {
+                    if (args) {
+                        // Set case
+                        const value = args[0];
+                        member.parent[member.memberName] = value;
+                        resolve(null);
+                    } else {
+                        // Get case
+                        const value = member.parent[member.memberName];
+                        resolve(value);
+                    }
+                } else {
+                    throw new Error(`The value '${identifier}' is not a function or property.`);
+                }
             });
 
             // We only listen for a result if the caller wants to be notified about it
@@ -582,10 +595,10 @@ export module DotNet {
         return error ? error.toString() : "null";
     }
 
-    export type ObjectMemberKind = "data" | "property" | "function" | "undefined";
+    export type ObjectMemberKind = "data" | "function" | "undefined";
 
     export interface ObjectMemberDescriptor {
-        parent: unknown;
+        parent: any;
         memberName: string;
         kind: ObjectMemberKind;
     }
