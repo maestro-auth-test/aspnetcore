@@ -8,7 +8,7 @@
   See https://github.com/dotnet/arcade/blob/master/Documentation/Darc.md for instructions on using darc.
 -->
 <Dependencies>
-  <Source Uri="https://github.com/dotnet/dotnet" Mapping="aspnetcore" Sha="5bb147b254d359d7cbf7fb4e5ccc231d5ebe3a4a" BarId="293255" />
+  <Source Uri="https://github.com/maestro-auth-test/dotnet" Mapping="aspnetcore" Sha="d29a7278afbf59989ae028459d2d119b142a846c" BarId="269" />
   <ProductDependencies>
     <Dependency Name="dotnet-ef" Version="10.0.2-servicing.25603.106">
       <Uri>https://github.com/dotnet/dotnet</Uri>
